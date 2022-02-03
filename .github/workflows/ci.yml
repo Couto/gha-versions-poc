@@ -1,0 +1,97 @@
+---
+name: Continuous Integration
+on:
+  push:
+    branches: [main, production]
+  pull_request:
+    branches: [main, production]
+
+jobs:
+  setup:
+    name: Set Environment variables
+    runs-on: ubuntu-latest
+    outputs:
+      clean_version: ${{steps.clean-version.outputs.version}}
+      # @SEE https://github.com/actions/runner/issues/480
+      head_ref_slug_url: ${{env.GITHUB_HEAD_REF_SLUG_URL}}
+      version: ${{ steps.calver-pr.outputs.version || steps.calver-pr-main.outputs.version || steps.calver-production.outputs.version }}
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Inject slug/short variables
+        id: slug
+        uses: rlespinasse/github-slug-action@v3.x
+
+      - name: Find next version number (Dev)
+        if: env.IS_PRODUCTION_BRANCH == 'false' && env.IS_MAIN_BRANCH == 'false'
+        id: calver-pr
+        uses: wendbv/calver-tag-action@v1
+        with:
+          output-only: true
+          prerelease: dev.${{ github.event.number }}.${{ github.run_number }}${{github.run_attempt}}
+
+      - name: Find next version number (Beta)
+        if: env.IS_MAIN_BRANCH == 'true'
+        id: calver-pr-main
+        uses: wendbv/calver-tag-action@v1
+        with:
+          output-only: true
+          prerelease: beta
+
+      - name: Find next version number (Release)
+        if: env.IS_PRODUCTION_BRANCH == 'true'
+        id: calver-production
+        uses: wendbv/calver-tag-action@v1
+        with:
+          output-only: true
+
+      - name: Clean version number
+        id: clean-version
+        env:
+          VERSION: ${{ steps.calver-pr.outputs.version || steps.calver-pr-main.outputs.version || steps.calver-production.outputs.version }}
+        run: echo "::set-output name=version::$(echo $VERSION | sed -r 's/v(\d*)/\1/')"
+
+  github-release:
+    needs:
+      [
+        setup,
+      ]
+    name: Create Github Release
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.setup.outputs.version }}
+      CLEAN_VERSION: ${{ needs.setup.outputs.clean_version }}
+    steps:
+      - name: Release Drafter
+        id: release-drafter
+        uses: release-drafter/release-drafter@v5
+        with:
+          version: ${{env.VERSION}}
+          name: ${{env.VERSION}}
+          tag: ${{env.VERSION}}
+          publish: true
+          prerelease: ${{ !contains('refs/heads/production', github.ref) }}
+          commitish: ${{ contains('refs/heads/production', github.ref) && 'refs/heads/production' || 'refs/heads/main' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Release Notes for Octopus
+        id: release-notes
+        run: |
+          cat <<EOF >> RELEASE_NOTES.md
+          # ${{ steps.release-drafter.outputs.tag_name }}
+          ${{ steps.release-drafter.outputs.body }}
+          ${{ steps.release-drafter.outputs.html_url }} 
+          ---
+          You can download the generated packages here:
+          * [WebApp](https://github.com/NewDayCards/newresolve/packages/1054557?version=${{env.CLEAN_VERSION}})
+          * [BFF](https://github.com/NewDayCards/newresolve/packages/1054556?version=${{env.CLEAN_VERSION}})
+          EOF
+
+      - name: Upload Release Notes
+        uses: actions/upload-artifact@v2
+        with:
+          name: RELEASE_NOTES.md
+          path: RELEASE_NOTES.md
+          retention-days: 1
