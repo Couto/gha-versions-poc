@@ -6,12 +6,18 @@ on:
   pull_request:
     branches: [main, production]
 
+env:
+  IS_MAIN_BRANCH: ${{ github.ref == 'refs/heads/main' }}
+  IS_PRODUCTION_BRANCH: ${{ github.ref == 'refs/heads/production' }}
+
 jobs:
   setup:
     name: Set Environment variables
     runs-on: ubuntu-latest
     outputs:
       clean_version: ${{steps.clean-version.outputs.version}}
+      is_main_branch: ${{env.IS_MAIN_BRANCH}}
+      is_production_branch: ${{env.IS_PRODUCTION_BRANCH}}
       # @SEE https://github.com/actions/runner/issues/480
       head_ref_slug_url: ${{env.GITHUB_HEAD_REF_SLUG_URL}}
       version: ${{ steps.calver-pr.outputs.version || steps.calver-pr-main.outputs.version || steps.calver-production.outputs.version }}
