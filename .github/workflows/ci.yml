@@ -65,7 +65,7 @@ jobs:
       ]
     name: Create Github Release
     runs-on: ubuntu-latest
-    if: ${{env.IS_MAIN_BRANCH || env.IS_PRODUCTION_BRANCH}}
+    if: ${{needs.setup.outputs.is_main_branch || needs.setup.outputs.is_production_branch}}
     env:
       VERSION: ${{ needs.setup.outputs.version }}
       CLEAN_VERSION: ${{ needs.setup.outputs.clean_version }}
