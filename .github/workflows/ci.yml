@@ -65,6 +65,7 @@ jobs:
       ]
     name: Create Github Release
     runs-on: ubuntu-latest
+    if: ${{env.IS_MAIN_BRANCH || env.IS_PRODUCTION_BRANCH}}
     env:
       VERSION: ${{ needs.setup.outputs.version }}
       CLEAN_VERSION: ${{ needs.setup.outputs.clean_version }}
@@ -77,7 +78,7 @@ jobs:
           name: ${{env.VERSION}}
           tag: ${{env.VERSION}}
           publish: true
-          prerelease: ${{ !contains('refs/heads/production', github.ref) }}
+          prerelease: ${{env.IS_MAIN_BRANCH}}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
