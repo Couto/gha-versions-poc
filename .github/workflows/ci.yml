@@ -76,6 +76,7 @@ jobs:
           tag: ${{env.VERSION}}
           publish: true
           prerelease: ${{env.IS_MAIN_BRANCH}}
+          commitish: 'production'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
