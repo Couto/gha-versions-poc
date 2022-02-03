@@ -62,7 +62,7 @@ jobs:
     needs: setup
     name: Create Github Release
     runs-on: ubuntu-latest
-    if: contains('production', github.ref) || contains('main', github.ref)
+    if: github.ref == 'refs/heads/production' || github.ref == 'refs/heads/main'
     env:
       VERSION: ${{ needs.setup.outputs.version }}
       CLEAN_VERSION: ${{ needs.setup.outputs.clean_version }}
