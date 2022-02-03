@@ -59,16 +59,15 @@ jobs:
         run: echo "::set-output name=version::$(echo $VERSION | sed -r 's/v(\d*)/\1/')"
 
   github-release:
-    needs:
-      [
-        setup,
-      ]
+    needs: setup
     name: Create Github Release
     runs-on: ubuntu-latest
     if: ${{ env.IS_PRODUCTION_BRANCH == 'true' || env.IS_MAIN_BRANCH == 'true' }}
     env:
       VERSION: ${{ needs.setup.outputs.version }}
       CLEAN_VERSION: ${{ needs.setup.outputs.clean_version }}
+      IS_PRODUCTION_BRANCH: ${{needs.setup.outputs.is_production_branch}}
+      IS_MAIN_BRANCH: ${{needs.setup.outputs.is_main_branch}}
     steps:
       - name: Release Drafter
         id: release-drafter
