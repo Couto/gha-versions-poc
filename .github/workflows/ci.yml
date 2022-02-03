@@ -78,7 +78,6 @@ jobs:
           tag: ${{env.VERSION}}
           publish: true
           prerelease: ${{ !contains('refs/heads/production', github.ref) }}
-          commitish: ${{ contains('refs/heads/production', github.ref) && 'refs/heads/production' || 'refs/heads/main' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
